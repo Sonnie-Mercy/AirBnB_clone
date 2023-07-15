@@ -8,7 +8,7 @@ from datetime import datetime
 
 
 class BaseModel:
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """using args and kwargs for the constructor of a basemodel"""
         if kwargs:
             for key, value in kwargs.items():
