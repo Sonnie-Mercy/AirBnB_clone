@@ -2,6 +2,14 @@
 """
 that serializes instances to a JSON file and deserializes JSON file
 """
+import json
+from models.base_model import BaseModel
+from models.user import User
+from models.state import State
+from models.city import City
+from models.place import Place
+from models.amenity import Amenity
+from models.review import Review
 
 
 class FileStorage:
@@ -27,6 +35,16 @@ class FileStorage:
         if path.exists(self.__file_path):
             with open(self.__file_path, 'r') as file:
                 serialized_objects = json.load(file)
+
+            classes = {
+                'BaseModel': BaseModel,
+                'User': User,
+                'State': State,
+                'City': City,
+                'Place': Place,
+                'Amenity': Amenity,
+                'Review': Review
+            }
 
             for key, obj_dict in serialized_objects.items():
                 class_name, obj_id = key.split('.')
