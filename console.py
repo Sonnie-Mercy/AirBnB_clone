@@ -2,16 +2,16 @@
 """The command interpreter for the Back-End"""
 
 import cmd
-import models
+import re
 from shlex import split
+from models import storage
+from models.base_model import BaseModel
 from models.user import User
 from models.state import State
 from models.city import City
-from models.amenity import Amenity
 from models.place import Place
+from models.amenity import Amenity
 from models.review import Review
-from models.base_model import BaseModel
-from models.engine.file_storage import FileStorage
 
 
 class HBNBCommand(cmd.Cmd):
@@ -39,23 +39,19 @@ class HBNBCommand(cmd.Cmd):
 
     def do_create(self, args):
         """Usage: create <class> <key 1>=<value 2> <key 2>=<value 2> ...
-        Create a new class instance with given keys/values and print its id."""
+        Create a new class instance with given keys/values and print id."""
         my_list = args.split()
         if not my_list:
             print("** class name missing **")
         elif my_list[0] not in HBNBCommand.allowed_obj:
             print("** class doesn't exist **")
         else:
-            my_object = eval(my_list[0] + '()')
-
-            for i in range(1, len(my_list)):
-                res = my_list[i].split('=')
-                res[1] = res[1].replace('_', ' ')
-                setattr(my_object, res[0], res[1])
-
-            my_object.save()
-            print(my_object.id)
-
+            new_instance = eval(my_list[0])()
+            for item in my_list[1:]:
+                key, value = item.split('=')
+                setattr(new_instance, key, value.replace('_', ' '))
+            new_instance.save()
+            print(new_instance.id)
 
     def do_show(self, args):
         """Prints the string representation of an instance
@@ -68,16 +64,16 @@ class HBNBCommand(cmd.Cmd):
         elif len(list_str) == 1:
             print("** instance id missing **")
         else:
-            objects = models.storage.all()
+            objects = storage.all()
             instance = list_str[0] + '.' + list_str[1]
-            if instance in objects.keys():
+            if instance in objects:
                 print(objects[instance])
             else:
                 print("** no instance found **")
 
     def do_destroy(self, args):
-        """Deletes an instance based on the class name and id
-        (save the change into the JSON file)"""
+        """Deletes an instance based on the class name and
+        id (save the change into the JSON file)"""
         list_str = args.split()
         if not list_str:
             print("** class name missing **")
@@ -86,11 +82,11 @@ class HBNBCommand(cmd.Cmd):
         elif len(list_str) == 1:
             print("** instance id missing **")
         else:
-            objects = models.storage.all()
+            objects = storage.all()
             instance = list_str[0] + '.' + list_str[1]
-            if instance in objects.keys():
-                del(objects[instance])
-                models.storage.save()
+            if instance in objects:
+                del objects[instance]
+                storage.save()
             else:
                 print("** no instance found **")
 
@@ -99,11 +95,12 @@ class HBNBCommand(cmd.Cmd):
         based or not on the class name"""
         list_str = args.split()
         if not args or list_str[0] in HBNBCommand.allowed_obj:
-            str_list = []
-            objects = models.storage.all()
-            for instance in objects.values():
-                str_list.append(instance.__str__())
-            print(str_list)
+            objects = storage.all()
+            class_name = list_str[0] if list_str else None
+            instances = [str(obj) for obj in objects.values()
+                         if not class_name or
+                         obj.__class__.__name__ == class_name]
+            print(instances)
         else:
             print("** class doesn't exist **")
 
@@ -122,17 +119,12 @@ class HBNBCommand(cmd.Cmd):
         elif len(list_str) == 3:
             print("** value missing **")
         else:
-            objects = models.storage.all()
+            objects = storage.all()
             instance = "{}.{}".format(list_str[0], list_str[1])
-            if instance in objects.keys():
-                for value in objects.values():
-                    try:
-                        attr_type = type(getattr(value, list_str[2]))
-                        list_str[3] = attr_type(list_str[3])
-                    except AttributeError:
-                        pass
-                setattr(value, list_str[2], list_str[3])
-                models.storage.save()
+            if instance in objects:
+                obj = objects[instance]
+                setattr(obj, list_str[2], list_str[3].replace('_', ' '))
+                obj.save()
             else:
                 print("** no instance found **")
 

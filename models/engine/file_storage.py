@@ -3,6 +3,7 @@
 that serializes instances to a JSON file and deserializes JSON file
 """
 import json
+from os import path
 from models.base_model import BaseModel
 from models.user import User
 from models.state import State
@@ -48,8 +49,7 @@ class FileStorage:
 
             for key, obj_dict in serialized_objects.items():
                 class_name, obj_id = key.split('.')
-                class_module = __import__('models.' + class_name,
-                                          fromlist=[class_name])
-                class_ = getattr(class_module, class_name)
-                obj = class_(**obj_dict)
-                self.__objects[key] = obj
+                if class_name in classes:
+                    class_ = classes[class_name]
+                    obj = class_(**obj_dict)
+                    self.__objects[key] = obj
